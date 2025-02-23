@@ -43,11 +43,13 @@ namespace AMWin_RichPresence {
         protected Logger? logger;
         protected string serviceName;
         protected string region;
+        protected bool isChecking;
 
         public AppleMusicScrobbler(string serviceName, string region, Logger? logger = null) {
             this.serviceName = serviceName;
             this.logger = logger;
             this.region = region;
+            this.isChecking = false;
         }
 
         protected bool IsTimeToScrobble(AppleMusicInfo info) {
@@ -85,8 +87,10 @@ namespace AMWin_RichPresence {
             //
             // Important caveat:  this does not have any "Scrobbler queue" built in - so only real-time Scrobbling will work (no offline capability).  Fair trade-off
             //    until an official Scrobbler is released.
+            if (isChecking) return;
 
             try {
+                isChecking = true;
                 var thisSongID = info.SongArtist + info.SongName + info.SongAlbum;
                 var webScraper = new AppleMusicWebScraper(info.SongName, info.SongAlbum, info.SongArtist, region);
                 var artist = Properties.Settings.Default.LastfmScrobblePrimaryArtist ? (await webScraper.GetArtistList()).FirstOrDefault(info.SongArtist) : info.SongArtist;
@@ -120,6 +124,7 @@ namespace AMWin_RichPresence {
             } catch (Exception ex) {
                 logger?.Log($"[{serviceName} scrobbler] An error occurred while scrobbling: {ex}");
             }
+            isChecking = false;
         }
     }
 
